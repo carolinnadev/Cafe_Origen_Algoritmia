@@ -111,6 +111,44 @@ function ventasDelDia(ventas, fechaBuscada) {
   return ventas.filter(v => v.fecha === fechaBuscada);
 }
 
+function clientesRecurrentes(ventas) {
+  const recurrentes = [];
+  for (let i = 0; i < ventas.length; i++) {
+    for (let j = i + 1; j < ventas.length; j++) {
+      if (
+        ventas[i].cliente === ventas[j].cliente &&
+        !recurrentes.includes(ventas[i].cliente)
+      ) {
+        recurrentes.push(ventas[i].cliente);
+      }
+    }
+  }
+  return recurrentes;
+}
+
+
+// Versión encadenada (crea múltiples arreglos intermedios en memoria)
+function totalCiudadCadena(ventas, ciudadBuscada) {
+  const norm = ciudadBuscada.trim().toLowerCase();
+  return ventas
+    .map(v => ({ ciudad: v.ciudad, subtotal: v.cantidad * v.precio })) // Arreglo 1
+    .filter(v => v.ciudad.trim().toLowerCase() === norm)                 // Arreglo 2
+    .map(v => v.subtotal)                                               // Arreglo 3
+    .reduce((suma, sub) => suma + sub, 0);
+}
+
+// Versión de un solo recorrido (sin arreglos intermedios, O(1) en espacio auxiliar)
+function totalCiudadUnaPasada(ventas, ciudadBuscada) {
+  const norm = ciudadBuscada.trim().toLowerCase();
+  let suma = 0;
+  for (const v of ventas) {
+    if (v.ciudad.trim().toLowerCase() === norm) {
+      suma += v.cantidad * v.precio;
+    }
+  }
+  return suma;
+}
+
 module.exports = {
   valorVenta,
   totalVendido,
@@ -124,5 +162,10 @@ module.exports = {
   totalPorCiudad,
   unidadesPorProducto,
   topProductosPorValor,
-  ventasDelDia
+  ventasDelDia,
+  clientesRecurrentes,
+  totalCiudadCadena,
+  totalCiudadUnaPasada
 };
+
+
