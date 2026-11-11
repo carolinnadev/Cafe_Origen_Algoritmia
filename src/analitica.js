@@ -149,6 +149,159 @@ function totalCiudadUnaPasada(ventas, ciudadBuscada) {
   return suma;
 }
 
+// 1. Versión optimizada con Set (O(n) en tiempo, O(n) en memoria)
+function clientesRecurrentesSet(ventas) {
+  const vistos = new Set();
+  const recurrentes = new Set();
+
+  for (const v of ventas) {
+    if (vistos.has(v.cliente)) {
+      recurrentes.add(v.cliente);
+    } else {
+      vistos.add(v.cliente);
+    }
+  }
+  return [...recurrentes];
+}
+
+// 2. Versión optimizada con Map para contar frecuencias (O(n))
+function comprasPorCliente(ventas) {
+  const conteo = new Map();
+
+  for (const v of ventas) {
+    conteo.set(v.cliente, (conteo.get(v.cliente) || 0) + 1);
+  }
+
+  const recurrentes = [];
+  for (const [cliente, frecuencia] of conteo.entries()) {
+    if (frecuencia > 1) {
+      recurrentes.push(cliente);
+    }
+  }
+  return recurrentes;
+}
+
+
+// src/analitica.js (agregar estas funciones)
+
+// 1. Combo regalo por complementos con Map - O(n)
+function comboRegalo(catalogo, valorObjetivo) {
+  const vistos = new Map(); // precio -> nombre del producto
+
+  for (const item of catalogo) {
+    const complemento = valorObjetivo - item.precio;
+    if (vistos.has(complemento)) {
+      return [vistos.get(complemento), item.producto];
+    }
+    vistos.set(item.precio, item.producto);
+  }
+  return null;
+}
+
+// 2. Producto estrella por ciudad (conteo de frecuencias) - O(n)
+function productoEstrellaPorCiudad(ventas) {
+  const porCiudad = new Map();
+
+  // Paso 1: Contar frecuencias por ciudad y producto
+  for (const v of ventas) {
+    const ciudad = v.ciudad.trim().toLowerCase();
+    const prod = v.producto;
+
+    if (!porCiudad.has(ciudad)) {
+      porCiudad.set(ciudad, new Map());
+    }
+    const contadorProds = porCiudad.get(ciudad);
+    contadorProds.set(prod, (contadorProds.get(prod) || 0) + v.cantidad);
+  }
+
+  // Paso 2: Encontrar el máximo de cada ciudad
+  const resultado = {};
+  for (const [ciudad, contadorProds] of porCiudad.entries()) {
+    let maxProd = null;
+    let maxCant = -1;
+
+    for (const [prod, cant] of contadorProds.entries()) {
+      if (cant > maxCant) {
+        maxCant = cant;
+        maxProd = prod;
+      }
+    }
+    const ciudadKey = ciudad.charAt(0).toUpperCase() + ciudad.slice(1);
+    resultado[ciudadKey] = { producto: maxProd, unidades: maxCant };
+  }
+
+  return resultado;
+}
+
+// 3. Primer cliente único (compró una sola vez en todo el historial) - O(n)
+function primerClienteUnico(ventas) {
+  const frecuencias = new Map();
+
+  // Contar cuántas veces aparece cada cliente en total
+  for (const v of ventas) {
+    frecuencias.set(v.cliente, (frecuencias.get(v.cliente) || 0) + 1);
+  }
+
+  // Buscar el primero en orden de aparición que tenga frecuencia 1
+  for (const v of ventas) {
+    if (frecuencias.get(v.cliente) === 1) {
+      return v.cliente;
+    }
+  }
+  return null;
+}
+
+
+
+// 1. Ventana deslizante fija O(n): Mejor racha de k días
+function mejorSemana(dias, k) {
+  if (dias.length < k) return null;
+
+  let suma = 0;
+  for (let i = 0; i < k; i++) suma += dias[i]; // Primera ventana
+
+  let maxima = suma;
+  let diaInicio = 0;
+
+  for (let i = k; i < dias.length; i++) {
+    suma = suma + dias[i] - dias[i - k]; // Deslizar: entra uno, sale otro
+    if (suma > maxima) {
+      maxima = suma;
+      diaInicio = i - k + 1;
+    }
+  }
+
+  return { total: maxima, diaInicio: diaInicio + 1 }; // Día 1-indexed
+}
+
+// 2. Dos punteros O(n) sobre arreglo ordenado: Par de productos más cercano al presupuesto
+function parMasCercano(catalogo, presupuesto) {
+  // Ordenar catálogo por precio (O(n log n))
+  const ordenado = [...catalogo].sort((a, b) => a.precio - b.precio);
+
+  let izq = 0;
+  let der = ordenado.length - 1;
+  let mejorSuma = -1;
+  let mejorPar = null;
+
+  while (izq < der) {
+    const suma = ordenado[izq].precio + ordenado[der].precio;
+
+    if (suma <= presupuesto) {
+      if (suma > mejorSuma) {
+        mejorSuma = suma;
+        mejorPar = [ordenado[izq].producto, ordenado[der].producto];
+      }
+      izq++; // Intentar aumentar la suma probando un precio mayor
+    } else {
+      der--; // Disminuir la suma probando un precio menor
+    }
+  }
+
+  return mejorPar ? { productos: mejorPar, total: mejorSuma } : null;
+}
+
+
 module.exports = {
   valorVenta,
   totalVendido,
@@ -165,7 +318,14 @@ module.exports = {
   ventasDelDia,
   clientesRecurrentes,
   totalCiudadCadena,
-  totalCiudadUnaPasada
+  totalCiudadUnaPasada,
+  clientesRecurrentesSet,
+  comprasPorCliente,
+  comboRegalo,
+  productoEstrellaPorCiudad,
+  primerClienteUnico,
+  mejorSemana,
+  parMasCercano
 };
 
 
